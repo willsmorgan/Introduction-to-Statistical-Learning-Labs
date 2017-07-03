@@ -1,0 +1,7 @@
+## Author : Will Morgan ##
+
+This repository is meant to keep track of my personal lab work done in the textbook: An Introduction to Statistical Learning with Applications in R, written by Gareth James, Daniela Witten, Trevor Hastie, and Robert Tibshirani
+
+All data is pulled from the following source, if not available in packages in R:
+http://www-bcf.usc.edu/~gareth/ISL/data.html
+

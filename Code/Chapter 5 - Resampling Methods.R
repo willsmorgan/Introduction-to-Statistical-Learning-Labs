@@ -1,6 +1,7 @@
 #This script corresponds with Chapter 5 of Introduction to Statistical Learning
-#5.3 Lab - Cross-Validation and the Bootstrap
+#Author : William Morgan
 
+#5.3 Lab - Cross-Validation and the Bootstrap
 set.seed(1)
 library("ISLR") #Auto, Portfolio data sets
 library("boot") #cv.glm()

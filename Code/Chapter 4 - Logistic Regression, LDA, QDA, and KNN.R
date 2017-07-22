@@ -1,6 +1,7 @@
 #This script corresponds with Chapter 4 of Introduction to Statistical Learning
-#4.6 Lab - Logistic Regression, LDA, QDA, and KNN
+#Author : William Morgan
 
+#4.6 Lab - Logistic Regression, LDA, QDA, and KNN
 library("MASS") #lda()
 library("ISLR") #location of Smarket data
 library("class") #knn()
@@ -33,7 +34,7 @@ summary(glm.fit)$coef
 
 ### Writing Tip ###
 #When a function has many arguments, the line of code can get annoyingly long to read. To make it easier, 
-  #start a new indented line after an argument (just like this :P)
+  #start a new indented line after an argument (like this)
 
 ### Pause for Analysis ###
 #Take a look at the coefficient for lag1 - it is negative, which implies that positive returns yesterday mean less chance of stock increase today

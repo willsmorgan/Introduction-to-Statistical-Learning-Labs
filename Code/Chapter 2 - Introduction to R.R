@@ -1,4 +1,5 @@
 #This script corresponds with Chapter 2 of Inroduction to Statistical Learning
+#Author : William Morgan
 #2.3 Lab: Introduction to R
 library(ISLR)
 

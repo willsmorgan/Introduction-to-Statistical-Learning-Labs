@@ -1,6 +1,7 @@
 #This script corresponds with Chapter 3 of Introduction to Statistical Learning
-#3.6 Lab - Linear Regression
+#Author : William Morgan
 
+#3.6 Lab - Linear Regression
 library("MASS") #collection of data sets and functions
 library("ISLR") #data sets associated with the text
 library("car") #vif()

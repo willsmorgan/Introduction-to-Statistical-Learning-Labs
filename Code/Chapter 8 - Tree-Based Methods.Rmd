@@ -1,0 +1,66 @@
+---
+title: "Chapter 8 Lab: Decision Trees"
+author: "William Morgan"
+output: rmarkdown::github_document
+---
+
+``` {r setup, include = FALSE}
+rm(list = ls(all = TRUE))
+
+libs <- c("tidyverse", "tree", "ISLR", 'stringr')
+invisible(lapply(libs, library, character.only = TRUE))
+```
+
+## 8.3.1: Fitting Classification Trees
+The `tree` library is used to construct classification and regression trees. We'll be
+using the `Carseats` data from the `ISLR` library. Instead of using the continuous
+variable `Sales` we will create our own dummy variable to indicate sales greater
+than 8
+
+```{r data, message = FALSE}
+data <- Carseats %>%
+  mutate(high = if_else(Sales > 8, 1, 0))
+
+names(data) <-  str_to_lower(names(data))
+```
+
+`tree::tree()` will allow us to fit the classification tree to predict the 
+variable we just created. The first argument is the only thing we need to 
+worry about at this point. We simply need to insert the formula that will
+be used to make our predictions, similar to `lm()`
+
+```{r creating the tree}
+ctree <- tree(high ~ . -sales, data)
+```
+
+The output from this tree is stored in a list, which we can
+summarize in order to view the variables that are used in internal nodes,
+the number of terminal nodes, and the training error rate
+
+```{r}
+summary(ctree)
+```
+
+We know that trees can be easily be visually interpreted, so let's 
+check out what our test case looks like. Be weary of doing any plotting
+because the tree can easily grow out of control and make the graph impossible
+to read (Check out the `ggtree` extension for ggplot's take on trees)
+
+```{r}
+plot(ctree)
+text(ctree, pretty = 0, cex = .65)
+```
+
+In order to evaluate a classification tree we need to use training and testing
+sets. Let's now repeat what we did above, this time including the calculation
+for the test error rate
+
+```{r}
+set.seed(2)
+test_tree <- data %>%
+  sample_frac(.5, replace = FALSE) %>%
+  tree(high ~ . -sales)
+```
+
+
+

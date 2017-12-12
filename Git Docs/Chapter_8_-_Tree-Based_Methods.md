@@ -1,11 +1,19 @@
 Chapter 8 Lab: Decision Trees
 ================
-William Morgan
 
-8.3.1: Fitting Classification Trees
------------------------------------
+##### Lab Topics:
 
-The `tree` library is used to construct classification and regression trees. We'll be using the `Carseats` data from the `ISLR` library. Instead of using the continuous variable `Sales` we will create our own dummy variable to indicate sales greater than 8
+-   Classification and Regression Trees with Pruning
+
+-   Random Forests and Bagging
+
+-   Boosting
+
+------------------------------------------------------------------------
+
+### 8.3.1: Fitting Classification Trees
+
+The `tree` library is used to construct classification and regression trees. We'll be using the `Carseats` data from the `ISLR` library. Instead of using the continuous variable `Sales` we will create our own dummy variable `high` to indicate sales greater than 8
 
 ``` r
 data <- Carseats %>%
@@ -50,7 +58,7 @@ train <- sample_n(data, 200)
 test <-  setdiff(data, train)
 
 # Run the recursive partioning algorithm
-ttree <- tree(high ~. -sales, train)
+ttree <- tree(high ~. -sales, data = train)
 
 # Make predictions and display confusion matrix
 test_predictions <- predict(ttree, test, type = 'class')
@@ -113,14 +121,14 @@ Now that we know how exactly how many terminal nodes we want, we prune our tree 
 ``` r
 pruned <- prune.misclass(ttree, best = 9)
 
-test_predictions <- predict(pruned, test, type = 'class')
+test_predictions <- predict(pruned, data = test, type = 'class')
 table(test_predictions, test$high)
 ```
 
     ##                 
     ## test_predictions  0  1
-    ##                0 94 24
-    ##                1 22 60
+    ##                0 74 57
+    ##                1 42 27
 
 ``` r
 (94 + 60) / 200
@@ -130,17 +138,17 @@ table(test_predictions, test$high)
 
 ------------------------------------------------------------------------
 
-8.3.2 Fitting Regression Trees
-------------------------------
+### 8.3.2 Fitting Regression Trees
 
 Not much changes in terms of the code when we switch to regression trees, so this section will pretty much be a recap of the previous one, just using different data. We pull the `Boston` data set from the `MASS` library for this exercise.
 
 ``` r
+Boston <- MASS::Boston
 set.seed(1)
 train <- sample_frac(Boston, .5) 
 test <-  setdiff(Boston, train)
 
-tree_train <- tree(medv ~ ., train)
+tree_train <- tree(medv ~ ., data = train)
 summary(tree_train)
 ```
 
@@ -197,17 +205,18 @@ mean((yhat - test_outcomes)^2)
 
 ------------------------------------------------------------------------
 
-8.3.3: Bagging and Random Forests
----------------------------------
+### 8.3.3: Bagging and Random Forests
 
 We'll be using the same data from the previous section and the `randomForest` package to help us accomplish some simple examples. We begin with a bagging example, where all predictors are used in each split.
 
 ``` r
 set.seed(1)
+train <- sample_frac(Boston, .5) 
+test <-  setdiff(Boston, train)
 
 # Set up the randomForest for the bagging case (all vars included)
-bag <- randomForest(medv ~ ., train,
-                    mtry = 13, importance = TRUE) # recall that `train` and `test` and are made in 8.3.2
+bag <- randomForest(medv ~ ., data = train,
+                    mtry = 13, importance = TRUE) 
 bag
 ```
 
@@ -218,8 +227,8 @@ bag
     ##                      Number of trees: 500
     ## No. of variables tried at each split: 13
     ## 
-    ##           Mean of squared residuals: 11.02509
-    ##                     % Var explained: 86.65
+    ##           Mean of squared residuals: 11.08966
+    ##                     % Var explained: 86.57
 
 ``` r
 # Calculate MSE of the testing set for the bagged regression tree
@@ -227,18 +236,18 @@ yhat <- predict(bag, test)
 mean((yhat - test$medv)^2)
 ```
 
-    ## [1] 13.47349
+    ## [1] 13.33831
 
 Compare the MSE of the bagged random forest to the optimally-pruned single tree found in 8.3.2 - it's much lower. We manually changed the amount of variables at each split in the above bagging example, but we might achieve even better results using a more general random forest. By default, `randomForest` uses *p*/3 variables when building a forest of regression trees and $\\sqrt p$ for classification trees. In the following example, we will use `mtry=6` (*m* ≈ *p*/2).
 
 ``` r
-forest <- randomForest(medv ~., train, mtry = 6, importance = TRUE)
+forest <- randomForest(medv ~., data = train, mtry = 6, importance = TRUE)
 
 yhat <- predict(forest, test)
 mean((yhat - test$medv)^2)
 ```
 
-    ## [1] 11.22316
+    ## [1] 11.36948
 
 We find that this approach worked - our MSE is now reduced to 11.37, lower than the previous two methods we tried.
 
@@ -249,19 +258,19 @@ importance(forest)
 ```
 
     ##           %IncMSE IncNodePurity
-    ## crim    12.988089    1078.43531
-    ## zn       2.714889      76.50506
-    ## indus   10.545100    1012.00217
-    ## chas     3.263686      52.61111
-    ## nox     12.906528    1156.33584
-    ## rm      29.407391    5989.54048
-    ## age      9.113592     521.17351
-    ## dis     12.933480    1293.35669
-    ## rad      3.594655     100.35282
-    ## tax      8.819588     414.65202
-    ## ptratio 12.224736     888.90254
-    ## black    6.358499     336.69694
-    ## lstat   31.387814    7645.22905
+    ## crim    13.125639    1027.62462
+    ## zn       1.609809      64.38627
+    ## indus    9.645743     987.25833
+    ## chas     2.683935      59.83641
+    ## nox     12.437350     881.00158
+    ## rm      31.443149    6613.72803
+    ## age     12.540572     554.76321
+    ## dis     15.582204    1358.74828
+    ## rad      4.125069      96.11925
+    ## tax      8.228251     460.20003
+    ## ptratio 10.896309     993.78242
+    ## black    6.842478     353.19750
+    ## lstat   29.548772    7203.09838
 
 The first column represents the mean decrease in accuracy of the prediction when the variable is removed from the model, and the second column is a measure of the total decrease in node impurity resulting from splits over that variable (averaged over all of the trees)
 
@@ -273,12 +282,17 @@ varImpPlot(forest)
 
 ![](Chapter_8_-_Tree-Based_Methods_files/figure-markdown_github/unnamed-chunk-13-1.png)
 
-8.3.4 Boosting
---------------
+------------------------------------------------------------------------
+
+### 8.3.4 Boosting
 
 We'll be using the `gbm` package to help us fit boosted regression trees to the `Boston` data set, which you should be familiar with by now.
 
 ``` r
+set.seed(1)
+train <- sample_frac(Boston, .5) 
+test <-  setdiff(Boston, train)
+
 boosted <- gbm(medv ~ ., train, distribution = 'gaussian', # regression => distr = 'gaussian'
                n.trees = 5000, interaction.depth = 4)
 
@@ -289,19 +303,19 @@ summary(boosted)
 ![](Chapter_8_-_Tree-Based_Methods_files/figure-markdown_github/unnamed-chunk-14-1.png)
 
     ##             var     rel.inf
-    ## lstat     lstat 45.91501457
-    ## rm           rm 31.05020061
-    ## dis         dis  6.92989912
-    ## crim       crim  4.04352442
-    ## nox         nox  2.56699881
-    ## ptratio ptratio  2.29883121
-    ## black     black  1.85031399
-    ## age         age  1.59946739
-    ## tax         tax  1.35432268
-    ## indus     indus  1.33072516
-    ## chas       chas  0.81218915
-    ## rad         rad  0.23766362
-    ## zn           zn  0.01084927
+    ## lstat     lstat 45.96792013
+    ## rm           rm 31.22018272
+    ## dis         dis  6.80567724
+    ## crim       crim  4.07534048
+    ## nox         nox  2.56586166
+    ## ptratio ptratio  2.26983216
+    ## black     black  1.78740116
+    ## age         age  1.64495723
+    ## tax         tax  1.36917603
+    ## indus     indus  1.27052715
+    ## chas       chas  0.80066528
+    ## rad         rad  0.20727091
+    ## zn           zn  0.01518785
 
 Let's now plot the marginal effect of these top two variables, `lstat` and `rm`
 
@@ -322,18 +336,18 @@ yhat <- predict(boosted, newdata = test, n.trees = 5000)
 mean((yhat - test$medv)^2)
 ```
 
-    ## [1] 11.8833
+    ## [1] 11.84694
 
 Not amazing, but not bad. The boosted model performed just around the same as the random forests and superior to the bagging model, but we might be able to squeeze out some extra performance by changing the shrinkage parameter *λ*. The default value is .001, but let's bump it up to *λ* = .2
 
 ``` r
-boosted <- gbm(medv ~. , train, distribution = 'gaussian',
+boosted <- gbm(medv ~., train, distribution = 'gaussian',
                n.trees = 5000, interaction.depth = 4,
                shrinkage = .2, verbose = F)
 yhat <- predict(boosted, newdata = test, n.trees = 5000)
 mean((yhat - test$medv)^2)
 ```
 
-    ## [1] 11.78647
+    ## [1] 11.42312
 
 Changing the shrinkage parameter actually made a difference - we're now just slightly under what we got from the previous model where it was equal to .001

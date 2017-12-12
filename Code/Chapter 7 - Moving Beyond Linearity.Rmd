@@ -1,0 +1,84 @@
+---
+title: 'Chapter 7 Lab: Moving Beyond Linearity'
+output: rmarkdown::github_document
+---
+
+
+```{r setup, include=FALSE}
+rm(list = ls(all = TRUE))
+
+libs <- c("tidyverse", "ISLR", "modelr")
+invisible(lapply(libs, library, character.only = TRUE))
+```
+
+Throughout this lab we will be using the same `Wage` data that has been
+considered in previous chapters. At a glance, this lab will cover the following
+topics:
+
+* Polynomial Regression and Step Functions
+
+* Regression Splines 
+
+* General Additive Models (GAMs)
+
+## 7.8.1: Polynomial Regression and Step Functions
+
+Polynomial regression is super easy to implement in `R`. We follow the basic 
+steps required to do linear regression with `lm()` and adjust some small things
+to include polynomial expressions in the formula
+
+Before we begin, just a quick aside - normally I don't use `attach()` in my own 
+work because it can get confusing what data is currently attached and which 
+columns you are calling. In this scenario, because we are only working with one 
+data set through the majority of this lab attaching the data is much less problematic
+
+```{r poly(), warning = F}
+# Bring in the Wage data and run a fourth-degree polynomial regression
+attach(Wage)
+fit <- lm(wage ~ poly(age, 4), data = Wage)
+coef(summary(fit))
+```
+
+By default, `poly()` returns orthogonal polynomials from degree 1 to degree 4. 
+That might seem a little confusing, so we can use the `raw = TRUE` option to specify
+that we want _age_, _age^2_, _age^3_, and _age^4_ directly.
+
+```{r poly(raw = TRUE)}
+fit2 <- lm(wage ~ poly(age, 4, raw = TRUE), data = Wage)
+coef(summary(fit))
+```
+
+There are several other ways to do the same thing - you can either use the wrapper
+`I()` (as `^` is interpreted as a call to interact variables), or simply just use 
+`cbind()`. We've excluded the output from these extra methods, but have included
+the code so you can see how they are implemented
+
+```{r alternative polynomial methods, eval = F}
+# Using I()
+lm(wage ~ age + I(age^2) + I(age^3) + I(age^4), data = Wage) %>%
+  coef()
+
+# Using cbind()
+lm(wage ~ cbind(age, age^2, age^3, age^4), data = Wage) %>%
+  coef()
+```
+
+Let's take a look at the fitted model to see how well it performs. We'll be using
+the `modelr` package to help us add a confidence interval around the fit. Since 
+there isn't any difference in outcome between the `poly(..., raw = TRUE)` and previous
+two mdoels we will just stick with `fit2` for the time being
+
+```{r model fit}
+Wage %>%
+  augment(fit2, .) %>%
+  mutate(fitted_low = .fitted - 2 * .se.fit,
+         fitted_high = .fitted + 2 * .se.fit) %>%
+  ggplot() +
+  geom_point(aes(age, wage), cex = .5) + 
+  geom_line(aes(age, .fitted), col = 'blue') +
+  geom_line(aes(age, fitted_low), col = 'blue', linetype = 'dashed') +
+  geom_line(aes(age, fitted_high), col = 'blue', linetype = 'dashed') +
+  labs(title = "Wage fit with degree-4 polynomial") + 
+  theme(plot.title = element_text(hjust = .5))
+```
+

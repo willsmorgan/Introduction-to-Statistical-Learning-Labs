@@ -1,6 +1,5 @@
 ---
 title: "Chapter 8 Lab: Decision Trees"
-author: "William Morgan"
 output: rmarkdown::github_document
 ---
 
@@ -10,11 +9,20 @@ rm(list = ls(all = TRUE))
 libs <- c("tidyverse", "tree", "ISLR", 'stringr', 'MASS', 'randomForest', 'gbm')
 invisible(lapply(libs, library, character.only = TRUE))
 ```
+##### Lab Topics:
 
-## 8.3.1: Fitting Classification Trees
+* Classification and Regression Trees with Pruning
+
+* Random Forests and Bagging
+
+* Boosting
+
+***
+
+### 8.3.1: Fitting Classification Trees
 The `tree` library is used to construct classification and regression trees. We'll be
 using the `Carseats` data from the `ISLR` library. Instead of using the continuous
-variable `Sales` we will create our own dummy variable to indicate sales greater
+variable `Sales` we will create our own dummy variable `high` to indicate sales greater
 than 8
 
 ```{r data, message = FALSE}
@@ -68,7 +76,7 @@ train <- sample_n(data, 200)
 test <-  setdiff(data, train)
 
 # Run the recursive partioning algorithm
-ttree <- tree(high ~. -sales, train)
+ttree <- tree(high ~. -sales, data = train)
 
 # Make predictions and display confusion matrix
 test_predictions <- predict(ttree, test, type = 'class')
@@ -127,7 +135,7 @@ tree performs any better on the testing set than the base tree $T_0$ did.
 ```{r}
 pruned <- prune.misclass(ttree, best = 9)
 
-test_predictions <- predict(pruned, test, type = 'class')
+test_predictions <- predict(pruned, data = test, type = 'class')
 table(test_predictions, test$high)
 
 (94 + 60) / 200
@@ -135,18 +143,19 @@ table(test_predictions, test$high)
 
 ***
 
-## 8.3.2 Fitting Regression Trees
+### 8.3.2 Fitting Regression Trees
 
 Not much changes in terms of the code when we switch to regression trees, so this
 section will pretty much be a recap of the previous one, just using different data.
 We pull the `Boston` data set from the `MASS` library for this exercise. 
 
 ```{r}
+Boston <- MASS::Boston
 set.seed(1)
 train <- sample_frac(Boston, .5) 
 test <-  setdiff(Boston, train)
 
-tree_train <- tree(medv ~ ., train)
+tree_train <- tree(medv ~ ., data = train)
 summary(tree_train)
 ```
 
@@ -184,7 +193,7 @@ mean((yhat - test_outcomes)^2)
 
 *** 
 
-## 8.3.3: Bagging and Random Forests
+### 8.3.3: Bagging and Random Forests
 
 We'll be using the same data from the previous section and the `randomForest` package
 to help us accomplish some simple examples. We begin with a bagging example, 
@@ -192,10 +201,12 @@ where all predictors are used in each split.
 
 ```{r}
 set.seed(1)
+train <- sample_frac(Boston, .5) 
+test <-  setdiff(Boston, train)
 
 # Set up the randomForest for the bagging case (all vars included)
-bag <- randomForest(medv ~ ., train,
-                    mtry = 13, importance = TRUE) # recall that `train` and `test` and are made in 8.3.2
+bag <- randomForest(medv ~ ., data = train,
+                    mtry = 13, importance = TRUE) 
 bag
 
 # Calculate MSE of the testing set for the bagged regression tree
@@ -211,7 +222,7 @@ a forest of regression trees and $\sqrt p$ for classification trees. In the foll
 example, we will use `mtry=6` ($m \approx p/2$). 
 
 ```{r}
-forest <- randomForest(medv ~., train, mtry = 6, importance = TRUE)
+forest <- randomForest(medv ~., data = train, mtry = 6, importance = TRUE)
 
 yhat <- predict(forest, test)
 mean((yhat - test$medv)^2)
@@ -238,13 +249,18 @@ over all of the trees)
 varImpPlot(forest)
 ```
 
+***
 
-## 8.3.4 Boosting
+### 8.3.4 Boosting
 
 We'll be using the `gbm` package to help us fit boosted regression trees to the 
 `Boston` data set, which you should be familiar with by now. 
 
 ```{r}
+set.seed(1)
+train <- sample_frac(Boston, .5) 
+test <-  setdiff(Boston, train)
+
 boosted <- gbm(medv ~ ., train, distribution = 'gaussian', # regression => distr = 'gaussian'
                n.trees = 5000, interaction.depth = 4)
 
@@ -276,7 +292,7 @@ out some extra performance by changing the shrinkage parameter $\lambda$. The de
 value is .001, but let's bump it up to $\lambda = .2$
 
 ```{r}
-boosted <- gbm(medv ~. , train, distribution = 'gaussian',
+boosted <- gbm(medv ~., train, distribution = 'gaussian',
                n.trees = 5000, interaction.depth = 4,
                shrinkage = .2, verbose = F)
 yhat <- predict(boosted, newdata = test, n.trees = 5000)

@@ -4,8 +4,8 @@
 
 
 ### Purpose
-This repository is meant to keep track of my personal lab work done in the textbook: An Introduction to Statistical Learning 
-with Applications in R, written by Gareth James, Daniela Witten, Trevor Hastie, and Robert Tibshirani. 
+This repository is meant to keep track of my personal lab work done in the textbook: *An Introduction to Statistical Learning 
+with Applications in R*, written by Gareth James, Daniela Witten, Trevor Hastie, and Robert Tibshirani. 
 
 
 ### Repository Guidelines and Basic Info

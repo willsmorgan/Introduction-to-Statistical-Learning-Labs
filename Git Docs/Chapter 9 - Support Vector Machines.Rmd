@@ -1,0 +1,89 @@
+---
+title: 'Chapter 9 Lab: Support Vector Machines'
+output: rmarkdown::github_document
+---
+
+```{r setup, include=FALSE}
+rm(list = ls(all = TRUE))
+
+libs <- c("tidyverse", "ISLR", "modelr", "e1071")
+invisible(lapply(libs, library, character.only = TRUE))
+```
+
+This lab primarily focuses on creating creating and tweaking a variety 
+of Support Vector Classifiers using the `e1071` library. The text mentions the
+availability of the `LiblineaR` library for very large linear problems, but 
+we do not use it in this lab. We conclude the lab with a discussion/implementation
+of ROC curves using the `ROCR` library. The topics that will be covered in this
+lab include:
+
+* Support Vector Classifiers
+
+* Support Vector Machines (SVM)
+
+* ROC Curves
+
+* SVMs with K > 2 Classes
+
+*** 
+
+## 9.6.1: Support Vector Classifier
+
+We begin the lab by building up a support vector classifier with the `svm()` function.
+Recall that this classifier works by defining a linear decision boundary to separate
+the two classes. With this in mind, we need to make sure that we set the `kernel`
+option in `svm()` to "linear"
+
+```{r Create toy data}
+# Set up toy data to work with
+set.seed(1)
+dat <- tibble(
+  x1 = rnorm(500),
+  x2 = rnorm(500),
+  y = factor(c(rep('A',250), (rep('B',250))))
+)
+
+# Add a little of separability between the classes
+dat$x1[dat$y == "A"] <-  dat$x1[dat$y == "A"] + 5
+
+# Check to see if classes are linearly separable
+ggplot(dat, aes(x1, x2, col = y)) + 
+  geom_jitter()
+
+```
+
+
+Now that we've created our toy data and can clearly see they are not linearly 
+separable, let's fit the support vector classifier. Note that we need to make
+sure that `y` is encoded as a factor variable in our formula. We set the `cost`
+argument to 10 in this example as well. (Default is 1)
+
+```{r SVC}
+svc <- svm(y ~ ., data = dat, kernel = 'linear',
+           cost = 10, scale = FALSE)
+plot(svc, dat)
+
+summary(svc)
+```
+
+
+Our support vector classifier works pretty well (as it should, the data was made
+to be very easily separated). Upon closer inspection, we can see that there are 
+10 support vectors, 5 from each class. You'll notice that these 10 support vectors
+are plotted as crosses on the above graph, and everything is left as an open circle
+
+What should we expect to see if we set a smaller cost parameter? With a smaller
+cost paramater our decision boundary gets a little more flexible and will allow
+for more errors in the training set. In short - wider margins, more support vectors
+
+```{r SVC with smaller cost}
+svc2 <- svm(y ~ ., data = dat, kernel = 'linear',
+            cost = 1, scale = FALSE)
+
+summary(svc2)
+```
+
+
+
+
+

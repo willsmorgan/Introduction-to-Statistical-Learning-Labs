@@ -1,0 +1,279 @@
+---
+title: 'Chapter 9 Lab: Support Vector Machines'
+output: rmarkdown::github_document
+---
+
+```{r setup, include=FALSE}
+rm(list = ls(all = TRUE))
+
+libs <- c("tidyverse", "ISLR", "modelr", "e1071", "ROCR")
+invisible(lapply(libs, library, character.only = TRUE))
+```
+
+This lab primarily focuses on creating creating and tweaking a variety 
+of Support Vector Classifiers using the `e1071` library. The text mentions the
+availability of the `LiblineaR` library for very large linear problems, but 
+we do not use it in this lab. We conclude the lab with a discussion/implementation
+of ROC curves using the `ROCR` library. The topics that will be covered in this
+lab include:
+
+* Support Vector Classifiers
+
+* Support Vector Machines (SVM)
+
+* ROC Curves
+
+* SVMs with K > 2 Classes
+
+*** 
+
+## 9.6.1: Support Vector Classifier
+
+We begin the lab by building up a support vector classifier with the `svm()` function.
+Recall that this classifier works by defining a linear decision boundary to separate
+the two classes. With this in mind, we need to make sure that we set the `kernel`
+option in `svm()` to "linear"
+
+```{r Create toy data}
+# Set up toy data to work with
+set.seed(1)
+dat <- tibble(
+  x1 = rnorm(500),
+  x2 = rnorm(500),
+  y = factor(c(rep('A',250), (rep('B',250))))
+)
+
+# Add a little of separability between the classes
+dat$x1[dat$y == "A"] <-  dat$x1[dat$y == "A"] + 5
+
+# Check to see if classes are linearly separable
+ggplot(dat, aes(x1, x2, col = y)) + 
+  geom_jitter()
+
+```
+
+
+Now that we've created our toy data and can clearly see they are not linearly 
+separable, let's fit the support vector classifier. Note that we need to make
+sure that `y` is encoded as a factor variable in our formula. We set the `cost`
+argument to 10 in this example as well. (Default is 1)
+
+```{r SVC}
+svc <- svm(y ~ ., data = dat, kernel = 'linear',
+           cost = 10, scale = FALSE)
+plot(svc, dat)
+
+summary(svc)
+```
+
+
+Our support vector classifier works pretty well (as it should, the data was made
+to be very easily separated). Upon closer inspection, we can see that there are 
+10 support vectors, 5 from each class. You'll notice that these 10 support vectors
+are plotted as crosses on the above graph, and everything is left as an open circle
+
+What should we expect to see if we set a smaller cost parameter? With a smaller
+cost paramater our decision boundary gets a little more flexible and will allow
+for more errors in the training set. In short - wider margins, more support vectors
+
+```{r SVC with smaller cost}
+svc2 <- svm(y ~ ., data = dat, kernel = 'linear',
+            cost = 1, scale = FALSE)
+
+summary(svc2)
+```
+
+
+How can we determine the best cost parameter to use? You should know by now that 
+cross-validation is pretty much the answer to every parameter-tuning problem. Luckily,
+the `e1071` library contains the `tune()` function, which will allow us to perform
+10-fold cross-validation over a range of cost parameters.
+
+```{r SVC with CV}
+svc_cv <- tune(svm,y ~., data = dat, kernel = 'linear',
+                   ranges = list(cost = c(.001, .01, .1, 1, 5, 10, 100)))
+
+```
+
+`tune()` returns an object of class `tune`, which contains results from the 10-fold CV,
+including the best performing parameter values and their respective errors (`best.parameters`,
+`best.performance`), a data frame of all parameter combinations and their corresponding results
+(`performances`)
+
+We'll take a glance at these components and check the results of our best-performing
+cross-validated model
+
+```{r svc_cv results}
+summary(svc_cv)
+
+best <-  svc_cv$best.model
+summary(best)
+```
+
+Now that we have a working model, let's generate some test data (which should've been
+done beforehand but is fine for instructional purposes). Keep in mind that we're
+making our own data to have a pretty well-defined class boundary, so our test
+error should be practically nil (and it is, as you'll see)
+
+```{r test data/predictions}
+# Change the seed so we don't get the exact same data
+set.seed(2)
+test <- tibble(
+  x1 = rnorm(500),
+  x2 = rnorm(500),
+  y = factor(c(rep('A',250), (rep('B',250))))
+)
+
+# Add the same amount of separability between the classes
+test$x1[test$y == "A"] <-  test$x1[test$y == "A"] + 5
+
+# Make predictions
+predictions <- predict(best, test)
+table(predictions, truth = test$y)
+
+```
+
+***
+
+## 9.6.2 Support Vector Machines
+ 
+This section is mostly going to be an extension of the previous one, only now we
+are learning how to use different kernels. In particular, we will do one example
+with a radial kernel and another with a polynomial kernel. We begin by creating 
+sample data
+
+
+```{r sample data}
+# Set up toy data to work with
+set.seed(1)
+dat <- tibble(
+  x1 = rnorm(500),
+  x2 = rnorm(500),
+  y = factor(c(rep('A',250), (rep('B',250))))
+)
+
+# Add a little of separability between the classes
+dat$x1[dat$y == "A"] <-  dat$x1[dat$y == "A"] + 3
+
+```
+
+
+We now fit the SVM using the `kernel = 'radial'` argument and setting the
+gamma parameter to one
+```{r radial kernel}
+train <- dat %>%
+  sample_frac(.5)
+
+test <-  setdiff(dat, train)
+
+rad_kern <-  svm(y ~ ., data = train, kernel = 'radial', gamma = 1, cost = 1)
+plot(rad_kern, train)
+
+```
+
+
+Instead of spending too much time on this preliminary result, let's just continue
+on by doing some cross-validation to determine the best gamma and cost parameter
+values. Then, we can check how well those parameter values perform on the training
+set.
+
+
+```{r radial cv}
+rad_cv <-  tune(svm, y ~ ., data = train, kernel = 'radial',
+                ranges = list(cost = c(.1, 1, 10, 100, 1000),
+                              gamma = c(.5, 1, 2, 3, 4)))
+
+summary(rad_cv)
+
+table(prediction = predict(rad_cv$best.model),
+      actual = train$y)
+
+```
+
+We'll just quickly run the same analysis with a polynomial kernel so we can compare
+the results
+
+```{r poly kernel}
+
+poly_cv <-  tune(svm, y ~ ., data = train, kernel = 'polynomial',
+                 ranges = list(cost = c(.1, 1, 10, 100, 1000),
+                               degree = c(2, 3, 4)))
+
+table(prediction = predict(poly_cv$best.model),
+      actual = train$y)
+```
+
+***
+
+## 9.6.3 ROC Curves
+
+In order to produce ROC curves from SVM fits, we need to extract the fitted 
+decision values by setting `decision.values = T` in `svm()`. Once we have that,
+we use the `ROCR` library to help us build the curves.
+
+For this example, we create the ROC curves using the training data because it is
+slightly less effort
+
+
+```{r}
+# Run first SVM and observe ROC performance
+svm_roc <-  svm(y ~ ., data = train, kernel= 'radial',
+                gamma = 2, cost = 1, decision.values = T)
+fitted <-  svm_roc$decision.values
+
+perform <-  prediction(fitted, train$y) %>%
+  performance(., 'tpr', 'fpr')
+
+original <-  tibble(x = unlist(perform@x.values),
+              y = unlist(perform@y.values))
+
+ggplot(original, aes(x,y)) + 
+  geom_line()
+
+
+
+# Rerun svm with more liberal gamma values
+svm_roc2 <-  svm(y ~ ., data = train, kernel= 'radial',
+                gamma = 50, cost = 1, decision.values = T)
+fitted2 <-  svm_roc2$decision.values
+
+perform2 <-  prediction(fitted2, train$y) %>%
+  performance(., 'tpr', 'fpr')
+
+high_gamma <-  tibble(x = unlist(perform2@x.values),
+              y = unlist(perform2@y.values))
+
+# Graphically compare the two models
+bind_rows("original" = original, "adjusted gamma" = high_gamma, .id = "Model") %>%
+  ggplot(., aes(x, y, col = Model)) + 
+  geom_line()
+
+```
+
+***
+
+## 9.6.4 SVM with K > 2 Classes
+
+When our dependent variable is categorical with more than two classes,
+`svm()` will perform classification using the one-versus-one approach. Recall
+that this requires ${K} \choose {2}$ SVMs for each possible comparison, so it might
+be kind of slow.
+
+```{r SVM Multiclassification}
+# Create sample data
+set.seed(1)
+dat <- tibble(
+  x1 = rnorm(600),
+  x2 = rnorm(600),
+  y = factor(c(rep('A', 200), (rep('B', 200)), rep('C', 200)))
+)
+
+# Artificially add separability between the classes
+dat$x1[dat$y == "A"] <- dat$x1[dat$y == "A"] + 5
+dat$x1[dat$y == "B"] <- dat$x1[dat$y == "B"] - 5
+
+# Fit the SVM
+multi_class <-  svm(y ~., data = dat, kernel = 'radial', cost = 10, gamma = 1)
+plot(multi_class, dat)
+```
+

@@ -1,0 +1,5 @@
+"0","train <- dat %>%"
+"0","  sample_frac(.5)"
+"0","test <-  setdiff(dat, train)"
+"0","rad_kern <-  svm(y ~ ., data = train, kernel = 'radial', gamma = 1, cost = 1)"
+"0","plot(rad_kern, train)"

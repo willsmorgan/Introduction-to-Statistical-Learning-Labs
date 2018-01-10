@@ -1,0 +1,3 @@
+"0","data <- Carseats %>%"
+"0","  mutate(high = factor(if_else(Sales > 8, 1, 0)))"
+"0","names(data) <-  str_to_lower(names(data))"

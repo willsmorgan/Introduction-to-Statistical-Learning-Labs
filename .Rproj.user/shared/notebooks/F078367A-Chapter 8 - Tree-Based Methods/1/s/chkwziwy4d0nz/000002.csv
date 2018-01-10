@@ -1,0 +1,7 @@
+"0","forest <- randomForest(medv ~., data = train, mtry = 6, importance = TRUE)"
+"0","yhat <- predict(forest, test)"
+"0","mean((yhat - test$medv)^2)"
+"1","[1]"
+"1"," 11.36948"
+"1","
+"

@@ -1,0 +1,4 @@
+"0","# Predict, plot, and calculate MSE"
+"0","yhat <- predict(tree_train, newdata = test)"
+"0","test_outcomes <- test$medv"
+"0","plot(yhat, test_outcomes)"

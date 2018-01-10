@@ -1,0 +1,7 @@
+"0","cv_tree <- cv.tree(tree_train)"
+"0","# Get an idea of change in error by changing tree size"
+"0","ggplot(data = data.frame(cv_tree$size, cv_tree$dev),"
+"0","  aes(x = cv_tree$size, y = cv_tree$dev)) +"
+"0","  geom_line(color = ""darkblue"") +"
+"0","  labs(x = ""Tree Size"", y = ""Number of Errors"", title = ""CV Error by Tree Size"") +"
+"0","  theme(plot.title = element_text(hjust = .5))"

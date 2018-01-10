@@ -1,0 +1,6 @@
+"0","yhat <- predict(boosted, newdata = test, n.trees = 5000)"
+"0","mean((yhat - test$medv)^2)"
+"1","[1]"
+"1"," 11.84694"
+"1","
+"

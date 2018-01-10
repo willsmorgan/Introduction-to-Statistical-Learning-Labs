@@ -1,0 +1,3 @@
+"0","svc <- svm(y ~ ., data = dat, kernel = 'linear',"
+"0","           cost = 10, scale = FALSE)"
+"0","plot(svc, dat)"

@@ -1,0 +1,7 @@
+"0","set.seed(1)"
+"0","train <- sample_frac(Boston, .5) "
+"0","test <-  setdiff(Boston, train)"
+"0","boosted <- gbm(medv ~ ., train, distribution = 'gaussian', # regression => distr = 'gaussian'"
+"0","               n.trees = 5000, interaction.depth = 4)"
+"0","# Summarize and produce a quick plot to highlight importance of variables"
+"0","summary(boosted)"

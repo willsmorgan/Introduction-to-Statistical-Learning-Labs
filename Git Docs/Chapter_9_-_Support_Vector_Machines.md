@@ -75,7 +75,7 @@ summary(svc)
 
 Our support vector classifier works pretty well (as it should, the data was made to be very easily separated). Upon closer inspection, we can see that there are 10 support vectors, 5 from each class. You'll notice that these 10 support vectors are plotted as crosses on the above graph, and everything is left as an open circle
 
-What should we expect to see if we set a smaller cost parameter? With a smaller cost paramater our decision boundary gets a little more flexible and will allow for more errors in the training set. In short - wider margins, more support vectors
+What should we expect to see if we set a smaller cost parameter? With a smaller cost paramater our decision boundary gets a little more rigid and will allow for fewer errors in the training set. In short - smaller margins, fewer support vectors
 
 ``` r
 svc2 <- svm(y ~ ., data = dat, kernel = 'linear',
